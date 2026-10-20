@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-20
+
+### Changed
+- Subspace settings (title, start URL, session sharing, icon, icon background, edge padding) now use explicit Save/Cancel buttons with a confirmation toast, like the app settings, instead of saving on blur/change.
+
+### Added
+- Downloads panel: a download button in the toolbar opens a popup listing the app's in-progress, completed and failed downloads, with "Open" and "Show in folder" actions. Per-app setting (App settings → Info → Downloads) to either save straight into the Downloads folder (default; existing files are never overwritten) or ask where to save each time.
+
+### Fixed
+- Mitigation for the mouse cursor going invisible over a Silos window (clicks still landed), which previously only recovered after closing every Silos window; it now usually comes back by moving the mouse. Disables two WebView2/Chromium compositor features (native window occlusion calculation, DirectComposition software overlays) suspected in the hardware-cursor conflict. Not a full fix: the bug also reproduces in other WebView2-based apps on Windows 11 26H2 (build 26300). Windows only for now.
+
 ## [0.1.4] - 2026-08-06
 
 ### Fixed
