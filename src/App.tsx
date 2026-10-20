@@ -7,6 +7,7 @@ import { SettingsView } from "./components/SettingsView";
 import { AppSettingsView } from "./components/AppSettingsView";
 import { AddSubspacePopup } from "./components/AddSubspacePopup";
 import { QuitConfirmPopup } from "./components/QuitConfirmPopup";
+import { DownloadsPopup } from "./components/DownloadsPopup";
 import { Toolbar } from "./components/Toolbar";
 import { GlobalSettingsView } from "./components/GlobalSettingsView";
 import { UnlockAppScreen } from "./components/UnlockAppScreen";
@@ -19,6 +20,7 @@ const settingsSubspace = params.get("settingsSubspace");
 const settingsForApp = params.get("settingsForApp");
 const addPopupFor = params.get("addPopupFor");
 const quitConfirmFor = params.get("quitConfirmFor");
+const downloadsPopupFor = params.get("downloadsPopupFor");
 const toolbarApp = params.get("toolbarApp");
 const toolbarSubspace = params.get("toolbarSubspace");
 const globalSettings = params.get("globalSettings");
@@ -79,6 +81,9 @@ function App() {
   }
   if (quitConfirmFor) {
     return <QuitConfirmPopup appId={quitConfirmFor} />;
+  }
+  if (downloadsPopupFor) {
+    return <DownloadsPopup appId={downloadsPopupFor} />;
   }
   if (settingsApp && settingsSubspace) {
     return <SettingsView appId={settingsApp} subspaceId={settingsSubspace} />;

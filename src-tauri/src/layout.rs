@@ -119,6 +119,10 @@ pub fn add_popup_label(app_id: &str) -> String {
     format!("addpopup-{}", app_id)
 }
 
+pub fn downloads_popup_label(app_id: &str) -> String {
+    format!("downloadspopup-{}", app_id)
+}
+
 pub fn quit_confirm_label(app_id: &str) -> String {
     format!("quitconfirm-{}", app_id)
 }

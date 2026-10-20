@@ -55,6 +55,10 @@ fn default_true() -> bool {
     true
 }
 
+pub fn default_download_mode() -> String {
+    "downloads".to_string()
+}
+
 fn default_hibernate_delay_secs() -> u64 {
     300
 }
@@ -125,6 +129,10 @@ pub struct WebApp {
     /// still get normal certificate validation.
     #[serde(default)]
     pub ignore_certificate_errors: bool,
+    /// What happens when a page starts a download: "downloads" saves straight
+    /// into the user's Downloads folder, "ask" shows a "Save as" dialog first.
+    #[serde(default = "default_download_mode")]
+    pub download_mode: String,
     pub subspaces: Vec<Subspace>,
 }
 
@@ -148,6 +156,7 @@ pub struct WebAppView {
     pub pin_lock_delay_secs: u64,
     pub created_at: i64,
     pub ignore_certificate_errors: bool,
+    pub download_mode: String,
     pub subspaces: Vec<Subspace>,
 }
 
@@ -169,6 +178,7 @@ impl From<&WebApp> for WebAppView {
             pin_lock_delay_secs: app.pin_lock_delay_secs,
             created_at: app.created_at,
             ignore_certificate_errors: app.ignore_certificate_errors,
+            download_mode: app.download_mode.clone(),
             subspaces: app.subspaces.clone(),
         }
     }
@@ -182,4 +192,18 @@ pub struct AppConfig {
     /// portable config, never checked into source.
     #[serde(default)]
     pub macos_icons_api_key: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn webapp_without_download_mode_deserializes_to_downloads() {
+        let app: WebApp = serde_json::from_str(
+            r#"{"id":"a","name":"A","url":"https://a.test","subspaces":[]}"#,
+        )
+        .unwrap();
+        assert_eq!(app.download_mode, "downloads");
+    }
 }

@@ -60,7 +60,17 @@ export interface WebApp {
   pin_lock_delay_secs: number;
   created_at: number;
   ignore_certificate_errors: boolean;
+  download_mode: "downloads" | "ask";
   subspaces: Subspace[];
+}
+
+export interface DownloadItem {
+  id: string;
+  file_name: string;
+  url: string;
+  path: string;
+  status: "in_progress" | "completed" | "failed";
+  started_at: number;
 }
 
 export interface SubspaceSize {

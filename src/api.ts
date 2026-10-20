@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppInfo, IconSourceInfo, MacIconResult, SessionGroupInfo, SiteInfo, Subspace, TabInfo, WebApp } from "./types";
+import type { AppInfo, DownloadItem, IconSourceInfo, MacIconResult, SessionGroupInfo, SiteInfo, Subspace, TabInfo, WebApp } from "./types";
 
 export const api = {
   listApps: () => invoke<WebApp[]>("list_apps"),
@@ -153,6 +153,19 @@ export const api = {
 
   setAppHibernateDelaySecs: (appId: string, delaySecs: number) =>
     invoke<void>("set_app_hibernate_delay_secs", { appId, delaySecs }),
+
+  setAppDownloadMode: (appId: string, mode: "downloads" | "ask") =>
+    invoke<void>("set_app_download_mode", { appId, mode }),
+
+  listDownloads: (appId: string) => invoke<DownloadItem[]>("list_downloads", { appId }),
+
+  clearDownloads: (appId: string) => invoke<void>("clear_downloads", { appId }),
+
+  openDownload: (appId: string, id: string) => invoke<void>("open_download", { appId, id }),
+
+  revealDownload: (appId: string, id: string) => invoke<void>("reveal_download", { appId, id }),
+
+  openDownloadsPopup: (appId: string) => invoke<void>("open_downloads_popup", { appId }),
 
   setAppIgnoreCertificateErrors: (appId: string, enabled: boolean) =>
     invoke<void>("set_app_ignore_certificate_errors", { appId, enabled }),

@@ -97,6 +97,7 @@ function InfoSection({ app, onChanged, onToast }: { app: WebApp; onChanged: () =
       name: a.name,
       url: a.url,
       runInBackground: a.run_in_background,
+      downloadMode: a.download_mode,
       eagerLoadSubspaces: a.eager_load_subspaces,
       hibernateMinutes: String(a.hibernate_delay_secs / 60),
     };
@@ -112,6 +113,7 @@ function InfoSection({ app, onChanged, onToast }: { app: WebApp; onChanged: () =
     draft.name !== app.name ||
     draft.url !== app.url ||
     draft.runInBackground !== app.run_in_background ||
+    draft.downloadMode !== app.download_mode ||
     draft.eagerLoadSubspaces !== app.eager_load_subspaces ||
     draft.hibernateMinutes !== String(app.hibernate_delay_secs / 60);
 
@@ -129,6 +131,9 @@ function InfoSection({ app, onChanged, onToast }: { app: WebApp; onChanged: () =
       }
       if (draft.runInBackground !== app.run_in_background) {
         await api.setAppRunInBackground(app.id, draft.runInBackground);
+      }
+      if (draft.downloadMode !== app.download_mode) {
+        await api.setAppDownloadMode(app.id, draft.downloadMode);
       }
       if (draft.eagerLoadSubspaces !== app.eager_load_subspaces) {
         await api.setAppEagerLoadSubspaces(app.id, draft.eagerLoadSubspaces);
@@ -173,6 +178,18 @@ function InfoSection({ app, onChanged, onToast }: { app: WebApp; onChanged: () =
         </label>
         <small>{t("appSettings.info.runInBackgroundHint")}</small>
       </div>
+
+      <label className="settings-field">
+        <span>{t("appSettings.info.downloadModeLabel")}</span>
+        <select
+          value={draft.downloadMode}
+          onChange={(e) => setDraft((d) => ({ ...d, downloadMode: e.target.value as "downloads" | "ask" }))}
+        >
+          <option value="downloads">{t("appSettings.info.downloadModeDownloads")}</option>
+          <option value="ask">{t("appSettings.info.downloadModeAsk")}</option>
+        </select>
+        <small>{t("appSettings.info.downloadModeHint")}</small>
+      </label>
 
       <h3 className="settings-group-heading">{t("appSettings.info.subspaceLoadingHeading")}</h3>
 

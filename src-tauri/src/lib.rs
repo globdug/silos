@@ -1,4 +1,5 @@
 mod commands;
+mod downloads;
 mod layout;
 mod models;
 mod platform;
@@ -81,6 +82,17 @@ fn handle_launch_args(app: &AppHandle, args: &[String]) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Each subspace gets its own WebView2 environment (separate GPU
+    // process), and running several side by side has been seen making the
+    // mouse cursor go invisible over any Silos window while clicks still
+    // land fine, recovering only once every Silos process is killed — a
+    // known WebView2/Chromium hardware-cursor-plane conflict between
+    // multiple GPU processes. Must be set before any WebView2 environment
+    // is created (the first webview build), so it has to happen before
+    // `tauri::Builder::default()` does anything that could create one.
+    #[cfg(windows)]
+    std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-features=CalculateNativeWinOcclusion,DirectCompositionSoftwareOverlays");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             handle_launch_args(app, &args);
@@ -104,6 +116,7 @@ pub fn run() {
             app.manage(TabRegistry::new());
             app.manage(BackgroundApps::new());
             app.manage(LockedApps::new());
+            app.manage(downloads::DownloadRegistry::new());
 
             let args: Vec<String> = std::env::args().collect();
             handle_launch_args(app.handle(), &args);
@@ -179,6 +192,12 @@ pub fn run() {
             commands::get_sidebar_expanded,
             commands::open_add_subspace_popup,
             commands::open_quit_confirm_popup,
+            commands::open_downloads_popup,
+            commands::list_downloads,
+            commands::clear_downloads,
+            commands::open_download,
+            commands::reveal_download,
+            commands::set_app_download_mode,
             commands::set_app_icon_style,
             commands::set_app_icon_background,
             commands::set_subspace_icon_background,

@@ -1140,3 +1140,162 @@ button.danger-ghost:hover {
   }
 }
 
+
+.toolbar-downloads-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-downloads-active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.downloads-popup {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  outline: none;
+}
+
+.downloads-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.downloads-popup-header h3 {
+  margin: 0;
+  font-family: "Archivo", "Inter", sans-serif;
+  font-size: 1rem;
+}
+
+.downloads-popup-header button {
+  padding: 0.3em 0.7em;
+  font-size: 0.8rem;
+}
+
+.downloads-empty {
+  margin: 0;
+  padding: 1.2rem 0.8rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.downloads-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.downloads-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.downloads-row-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.downloads-row-status {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.downloads-status-in_progress {
+  color: var(--accent);
+}
+
+.downloads-status-failed {
+  color: var(--danger);
+}
+
+.downloads-row-path {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.downloads-row-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+.downloads-row-actions button {
+  padding: 0.25em 0.6em;
+  font-size: 0.75rem;
+}
+
+.toolbar-downloads-btn {
+  position: relative;
+}
+
+/* Linear on/off flash when a download starts — a hard flap, no easing. */
+.toolbar-downloads-flash {
+  animation: toolbar-downloads-flash 0.35s linear 3;
+}
+
+@keyframes toolbar-downloads-flash {
+  0%,
+  100% {
+    background: transparent;
+  }
+  50% {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+}
+
+.toolbar-downloads-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: 2px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar-downloads-flash {
+    animation: none;
+  }
+}

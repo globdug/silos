@@ -42,6 +42,10 @@
       "urlHint": "Default URL used by subspaces without their own start URL.",
       "runInBackgroundLabel": "Run in background",
       "runInBackgroundHint": "On close, the window stays alive in the tray instead of actually closing.",
+      "downloadModeLabel": "Downloads",
+      "downloadModeDownloads": "Save to the Downloads folder",
+      "downloadModeAsk": "Ask where to save each time",
+      "downloadModeHint": "Applies to files downloaded from this app. The toolbar's download button lists them either way.",
       "subspaceLoadingHeading": "Subspace loading",
       "eagerLoadLabel": "Load all subspaces immediately",
       "eagerLoadHint": "On by default: every subspace starts together with the app, useful for receiving notifications from all of them (e.g. multiple WhatsApp accounts). Turn it off to load them only on first click instead.",
@@ -228,7 +232,18 @@
     "forwardTitle": "Forward",
     "reloadTitle": "Reload",
     "homeTitle": "Home",
-    "urlPlaceholder": "Address"
+    "urlPlaceholder": "Address",
+    "downloadsTitle": "Downloads"
+  },
+  "downloads": {
+    "title": "Downloads",
+    "empty": "No downloads yet.",
+    "inProgress": "Downloading…",
+    "completed": "Completed",
+    "failed": "Failed",
+    "open": "Open",
+    "reveal": "Show in folder",
+    "clear": "Clear list"
   },
   "appSidebar": {
     "addSubspaceTitle": "Add subspace",

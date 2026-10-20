@@ -1,8 +1,9 @@
-import { FormEvent, MouseEvent, useEffect, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import type { TabInfo } from "../types";
 import { api } from "../api";
+import { DownloadIcon } from "./icons";
 
 interface Props {
   appId: string;
@@ -16,6 +17,17 @@ export function Toolbar({ appId, subspaceId }: Props) {
   const [urlInput, setUrlInput] = useState("");
   const [editingUrl, setEditingUrl] = useState(false);
   const [homeUrl, setHomeUrl] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [unseenDownloads, setUnseenDownloads] = useState(0);
+  const [flashKey, setFlashKey] = useState(0);
+  const seenDownloadIds = useRef<Set<string>>(new Set());
+  const latestDownloadIds = useRef<string[]>([]);
+
+  function openDownloads() {
+    seenDownloadIds.current = new Set(latestDownloadIds.current);
+    setUnseenDownloads(0);
+    api.openDownloadsPopup(appId);
+  }
 
   async function refresh() {
     const [nextTabs, active] = await Promise.all([
@@ -33,6 +45,35 @@ export function Toolbar({ appId, subspaceId }: Props) {
       unlisten.then((f) => f());
     };
   }, [appId, subspaceId]);
+
+  useEffect(() => {
+    // Items already listed when this toolbar loads count as seen; anything
+    // that appears afterwards flashes the button and adds to the badge until
+    // the popup is opened.
+    let known: Set<string> | null = null;
+    const refreshDownloads = () =>
+      api.listDownloads(appId).then((items) => {
+        setDownloading(items.some((i) => i.status === "in_progress"));
+        if (known === null) {
+          known = new Set(items.map((i) => i.id));
+          seenDownloadIds.current = new Set(known);
+          latestDownloadIds.current = items.map((i) => i.id);
+          return;
+        }
+        const fresh = items.filter((i) => !known!.has(i.id));
+        fresh.forEach((i) => known!.add(i.id));
+        if (fresh.length > 0) setFlashKey((k) => k + 1);
+        setUnseenDownloads(items.filter((i) => !seenDownloadIds.current.has(i.id)).length);
+        latestDownloadIds.current = items.map((i) => i.id);
+      });
+    refreshDownloads();
+    const unlisten = listen<string>("downloads-changed", (e) => {
+      if (e.payload === appId) refreshDownloads();
+    });
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, [appId]);
 
   useEffect(() => {
     api.listApps().then((apps) => {
@@ -119,6 +160,15 @@ export function Toolbar({ appId, subspaceId }: Props) {
           title={t("toolbar.homeTitle")}
         >
           ⌂
+        </button>
+        <button
+          key={flashKey}
+          className={`ghost toolbar-nav-btn toolbar-downloads-btn ${downloading ? "toolbar-downloads-active" : ""} ${flashKey > 0 ? "toolbar-downloads-flash" : ""}`}
+          onClick={openDownloads}
+          title={t("toolbar.downloadsTitle")}
+        >
+          <DownloadIcon size={15} />
+          {unseenDownloads > 0 && <span className="toolbar-downloads-badge">{unseenDownloads}</span>}
         </button>
         <form className="toolbar-url-form" onSubmit={handleUrlSubmit}>
           <input

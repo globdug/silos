@@ -1,5 +1,6 @@
+use crate::downloads::DownloadRegistry;
 use crate::layout::{
-    add_popup_label, app_settings_window_label, app_window_label, lock_overlay_label,
+    add_popup_label, app_settings_window_label, app_window_label, downloads_popup_label, lock_overlay_label,
     quit_confirm_label, settings_window_label, sidebar_label, subspace_key, tab_label,
     tab_prefix_for_app, tab_prefix_for_subspace, toolbar_label, toolbar_prefix, ActiveSubspaces,
     BackgroundApps, LockedApps, SidebarWidths, SubspaceTabs, TabInfo, TabRegistry,
@@ -420,6 +421,7 @@ pub fn create_app(
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0),
         ignore_certificate_errors: false,
+        download_mode: crate::models::default_download_mode(),
         subspaces: vec![default_subspace],
     };
     config.apps.push(app.clone());
@@ -1434,6 +1436,19 @@ pub fn set_app_eager_load_subspaces(app_handle: AppHandle, store: State<Store>, 
 /// patch webviews already running, since the bypass is wired once at webview
 /// creation (see `open_tab_internal`).
 #[tauri::command]
+pub fn set_app_download_mode(store: State<Store>, app_id: String, mode: String) {
+    if mode != "downloads" && mode != "ask" {
+        return;
+    }
+    let mut config = store.config.lock().unwrap();
+    if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+        app.download_mode = mode;
+    }
+    drop(config);
+    store.save();
+}
+
+#[tauri::command]
 pub fn set_app_ignore_certificate_errors(store: State<Store>, app_id: String, enabled: bool) {
     let mut config = store.config.lock().unwrap();
     if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
@@ -1807,6 +1822,124 @@ fn show_subspace_tabs(
     Ok(())
 }
 
+fn notify_downloads(app_handle: &AppHandle, app_id: &str) {
+    let _ = app_handle.emit("downloads-changed", app_id);
+}
+
+/// Decides where a page-initiated download goes and keeps the app's download
+/// list in sync. Returning false on `Requested` cancels the download.
+fn handle_download_event(app_handle: &AppHandle, app_id: &str, event: tauri::webview::DownloadEvent) -> bool {
+    use tauri::webview::DownloadEvent;
+    use tauri_plugin_dialog::DialogExt;
+
+    let registry = app_handle.state::<DownloadRegistry>();
+    match event {
+        DownloadEvent::Requested { url, destination } => {
+            let ask = {
+                let store = app_handle.state::<Store>();
+                let config = store.config.lock().unwrap();
+                config.apps.iter().any(|a| a.id == app_id && a.download_mode == "ask")
+            };
+            let file_name = destination
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "download".to_string());
+            let downloads_dir = app_handle.path().download_dir().ok();
+
+            if ask {
+                let mut dialog = app_handle.dialog().file().set_file_name(&file_name);
+                if let Some(dir) = &downloads_dir {
+                    dialog = dialog.set_directory(dir);
+                }
+                // A cancelled dialog means no download at all.
+                let Some(chosen) = dialog.blocking_save_file().and_then(|p| p.into_path().ok()) else {
+                    return false;
+                };
+                *destination = chosen;
+            } else if let Some(dir) = &downloads_dir {
+                *destination = crate::downloads::unique_path(dir, &file_name);
+            }
+
+            registry.start(app_id, url.as_str(), destination);
+            notify_downloads(app_handle, app_id);
+            true
+        }
+        DownloadEvent::Finished { url, path, success } => {
+            registry.finish(app_id, url.as_str(), path.as_deref(), success);
+            notify_downloads(app_handle, app_id);
+            true
+        }
+        _ => true,
+    }
+}
+
+#[tauri::command]
+pub fn list_downloads(registry: State<DownloadRegistry>, app_id: String) -> Vec<crate::downloads::DownloadItem> {
+    registry.list(&app_id)
+}
+
+#[tauri::command]
+pub fn clear_downloads(app_handle: AppHandle, registry: State<DownloadRegistry>, app_id: String) {
+    registry.clear(&app_id);
+    notify_downloads(&app_handle, &app_id);
+}
+
+#[tauri::command]
+pub fn open_download(app_handle: AppHandle, registry: State<DownloadRegistry>, app_id: String, id: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let item = registry.find(&app_id, &id).ok_or("download not found")?;
+    app_handle.opener().open_path(item.path, None::<&str>).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn reveal_download(app_handle: AppHandle, registry: State<DownloadRegistry>, app_id: String, id: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let item = registry.find(&app_id, &id).ok_or("download not found")?;
+    app_handle.opener().reveal_item_in_dir(item.path).map_err(|e| e.to_string())
+}
+
+/// Borderless popup listing the app's downloads, anchored bottom-right of the
+/// app window (same approach as `open_quit_confirm_popup`).
+#[tauri::command]
+pub async fn open_downloads_popup(app_handle: AppHandle, app_id: String) -> Result<(), String> {
+    let label = downloads_popup_label(&app_id);
+
+    if let Some(window) = app_handle.get_window(&label) {
+        window.set_focus().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    let app_window = app_handle
+        .get_window(&app_window_label(&app_id))
+        .ok_or("app window not open")?;
+
+    let scale = app_window.scale_factor().map_err(|e| e.to_string())?;
+    let origin = app_window.outer_position().map_err(|e| e.to_string())?.to_logical::<f64>(scale);
+    let window_size = app_window.inner_size().map_err(|e| e.to_string())?.to_logical::<f64>(scale);
+
+    let popup_width = 360.0;
+    let popup_height = 420.0;
+    let popup_x = (origin.x + window_size.width - popup_width - 8.0).max(origin.x + 8.0);
+    let popup_y = origin.y + TOOLBAR_HEIGHT + 4.0;
+
+    let url = WebviewUrl::App(format!("index.html?downloadsPopupFor={app_id}").into());
+
+    tauri::WebviewWindowBuilder::new(&app_handle, &label, url)
+        .title("Download")
+        .inner_size(popup_width, popup_height)
+        .position(popup_x, popup_y)
+        .decorations(false)
+        .resizable(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .focused(true)
+        .background_color(APP_BG)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 /// Creates a new tab (webview) for a subspace, wiring up navigation/title
 /// sync and new-window interception, and makes it the active tab.
 fn open_tab_internal(
@@ -1881,6 +2014,9 @@ fn open_tab_internal(
     let subspace_id_title = subspace_id.to_string();
     let tab_id_title = tab_id.clone();
 
+    let handle_download = app_handle.clone();
+    let app_id_download = app_id.to_string();
+
     let handle_popup = app_handle.clone();
     let app_id_popup = app_id.to_string();
     let subspace_id_popup = subspace_id.to_string();
@@ -1910,6 +2046,7 @@ fn open_tab_internal(
                 // WebView2 can dispatch native HTML5 drop events to page JS,
                 // which breaks in-page file attach (e.g. WhatsApp Web drop zone).
                 .disable_drag_drop_handler()
+                .on_download(move |_webview, event| handle_download_event(&handle_download, &app_id_download, event))
                 .on_navigation(move |nav_url| {
                     // The injected script redirects ctrl/shift/middle-clicked
                     // links to this fake scheme instead of letting them

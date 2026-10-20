@@ -42,6 +42,10 @@
       "urlHint": "URL predefinito usato dai sottospazi senza un URL iniziale proprio.",
       "runInBackgroundLabel": "Esegui in background",
       "runInBackgroundHint": "Alla chiusura, la finestra resta attiva nella tray invece di chiudersi davvero.",
+      "downloadModeLabel": "Download",
+      "downloadModeDownloads": "Salva nella cartella Download",
+      "downloadModeAsk": "Chiedi dove salvare ogni volta",
+      "downloadModeHint": "Vale per i file scaricati da questa app. Il pulsante download nella toolbar li elenca in entrambi i casi.",
       "subspaceLoadingHeading": "Caricamento sottospazi",
       "eagerLoadLabel": "Carica subito tutti i sottospazi",
       "eagerLoadHint": "Attivo di default: tutti i sottospazi partono insieme all'app, utile per ricevere notifiche da tutti (es. più account WhatsApp). Disattivalo per caricarli solo al primo click.",
@@ -228,7 +232,18 @@
     "forwardTitle": "Avanti",
     "reloadTitle": "Ricarica",
     "homeTitle": "Home",
-    "urlPlaceholder": "Indirizzo"
+    "urlPlaceholder": "Indirizzo",
+    "downloadsTitle": "Download"
+  },
+  "downloads": {
+    "title": "Download",
+    "empty": "Nessun download.",
+    "inProgress": "Download in corso…",
+    "completed": "Completato",
+    "failed": "Fallito",
+    "open": "Apri",
+    "reveal": "Mostra nella cartella",
+    "clear": "Cancella elenco"
   },
   "appSidebar": {
     "addSubspaceTitle": "Aggiungi sottospazio",
