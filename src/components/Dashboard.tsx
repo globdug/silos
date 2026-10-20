@@ -215,7 +215,7 @@ export function Dashboard({ apps, onSelect, onCreate, onDelete, onOpenGlobalSett
           title="GitHub"
           onClick={(e) => {
             e.preventDefault();
-            openUrl("https://github.com/silosapp/silos");
+            openUrl("https://github.com/globdug/silos");
           }}
         >
           <GitHubIcon size={13} />
