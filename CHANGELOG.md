@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-20
+
+### Changed
+- GitHub release notes are now taken from this changelog instead of being auto-generated.
+
 ## [0.3.1] - 2026-10-20
 
 ### Changed
