@@ -35,10 +35,26 @@ jobs:
           $hash = (Get-FileHash src-tauri/target/release/silos.exe -Algorithm SHA256).Hash.ToLower()
           "$hash  silos.exe" | Out-File -FilePath src-tauri/target/release/silos.exe.sha256 -Encoding ascii -NoNewline
 
+      # Release notes = this version's section of CHANGELOG.md, so the GitHub
+      # release and the changelog say the same thing.
+      - name: Extract release notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $text = Get-Content CHANGELOG.md -Raw
+          $pattern = "(?ms)^## \[$([regex]::Escape($version))\][^\r\n]*\r?\n(.*?)(?=^## \[|\z)"
+          if ($text -match $pattern -and $Matches[1].Trim()) {
+            $notes = $Matches[1].Trim()
+          } else {
+            $notes = "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)."
+          }
+          Set-Content -Path release-notes.md -Value $notes -Encoding utf8
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             src-tauri/target/release/silos.exe
             src-tauri/target/release/silos.exe.sha256
-          generate_release_notes: true
+          body_path: release-notes.md
+          generate_release_notes: false
