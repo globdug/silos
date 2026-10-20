@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-20
+
+### Changed
+- Version bump only, used to test the self-updater end to end.
+
 ## [0.3.0] - 2026-10-20
 
 ### Added
