@@ -192,6 +192,11 @@ pub struct AppConfig {
     /// portable config, never checked into source.
     #[serde(default)]
     pub macos_icons_api_key: Option<String>,
+    /// Set when the user turns off the periodic "is there a newer Silos?"
+    /// check. Stored inverted so a config without it (and `Default`) means
+    /// the check is on.
+    #[serde(default)]
+    pub auto_update_check_disabled: bool,
 }
 
 #[cfg(test)]

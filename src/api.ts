@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppInfo, DownloadItem, IconSourceInfo, MacIconResult, SessionGroupInfo, SiteInfo, Subspace, TabInfo, WebApp } from "./types";
+import type { AppInfo, DownloadItem, IconSourceInfo, MacIconResult, SessionGroupInfo, SiteInfo, Subspace, TabInfo, UpdateInfo, WebApp } from "./types";
 
 export const api = {
   listApps: () => invoke<WebApp[]>("list_apps"),
@@ -156,6 +156,14 @@ export const api = {
 
   setAppDownloadMode: (appId: string, mode: "downloads" | "ask") =>
     invoke<void>("set_app_download_mode", { appId, mode }),
+
+  checkForUpdate: () => invoke<UpdateInfo | null>("check_for_update"),
+
+  installUpdate: () => invoke<void>("install_update"),
+
+  getAutoUpdateCheck: () => invoke<boolean>("get_auto_update_check"),
+
+  setAutoUpdateCheck: (enabled: boolean) => invoke<void>("set_auto_update_check", { enabled }),
 
   listDownloads: (appId: string) => invoke<DownloadItem[]>("list_downloads", { appId }),
 

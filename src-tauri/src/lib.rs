@@ -5,6 +5,7 @@ mod models;
 mod platform;
 mod shortcuts;
 mod store;
+mod updater;
 
 use layout::{ActiveSubspaces, BackgroundApps, LockedApps, SidebarWidths, TabRegistry};
 use store::Store;
@@ -80,8 +81,44 @@ fn handle_launch_args(app: &AppHandle, args: &[String]) {
     }
 }
 
+/// Value following `flag` in `args`, e.g. `--reopen a,b`.
+fn arg_value(args: &[String], flag: &str) -> Option<String> {
+    args.iter().position(|a| a == flag).and_then(|i| args.get(i + 1)).cloned()
+}
+
+/// First thing a freshly-updated exe does (before the single-instance plugin
+/// gets a say): wait for the old process to be gone — otherwise it would
+/// still hold the single-instance lock, forward our launch to itself and
+/// leave us exiting — then remove the exe it was renamed to.
+fn finish_update_handover(args: &[String]) {
+    let Some(old_pid) = arg_value(args, "--updated-from").and_then(|p| p.parse::<u32>().ok()) else {
+        return;
+    };
+
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::Foundation::CloseHandle;
+        use windows::Win32::System::Threading::{OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE};
+        if let Ok(handle) = OpenProcess(PROCESS_SYNCHRONIZE, false, old_pid) {
+            WaitForSingleObject(handle, 10_000);
+            let _ = CloseHandle(handle);
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = old_pid;
+        std::thread::sleep(std::time::Duration::from_secs(2));
+    }
+
+    if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(|p| p.to_path_buf())) {
+        let _ = std::fs::remove_file(dir.join("silos.old.exe"));
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    finish_update_handover(&std::env::args().collect::<Vec<_>>());
+
     // Each subspace gets its own WebView2 environment (separate GPU
     // process), and running several side by side has been seen making the
     // mouse cursor go invisible over any Silos window while clicks still
@@ -119,7 +156,21 @@ pub fn run() {
             app.manage(downloads::DownloadRegistry::new());
 
             let args: Vec<String> = std::env::args().collect();
-            handle_launch_args(app.handle(), &args);
+            match arg_value(&args, "--reopen") {
+                // Restart after a self-update: bring back what was open.
+                Some(list) => {
+                    let entries: Vec<String> = list.split(',').filter(|e| !e.is_empty()).map(str::to_string).collect();
+                    let handle = app.handle().clone();
+                    tauri::async_runtime::spawn(async move {
+                        if entries.is_empty() {
+                            show_dashboard(&handle);
+                        } else {
+                            commands::reopen_apps(handle, entries).await;
+                        }
+                    });
+                }
+                None => handle_launch_args(app.handle(), &args),
+            }
 
             app.on_menu_event(|app_handle, event| {
                 let id = event.id().0.clone();
@@ -193,6 +244,10 @@ pub fn run() {
             commands::open_add_subspace_popup,
             commands::open_quit_confirm_popup,
             commands::open_downloads_popup,
+            commands::check_for_update,
+            commands::install_update,
+            commands::get_auto_update_check,
+            commands::set_auto_update_check,
             commands::list_downloads,
             commands::clear_downloads,
             commands::open_download,

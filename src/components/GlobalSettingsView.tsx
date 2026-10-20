@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { api } from "../api";
 import { changeLanguageEverywhere } from "../i18n";
+import { useUpdater } from "../useUpdater";
 
-type Section = "language" | "extensions";
+type Section = "language" | "extensions" | "updates";
 type ToastFn = (message: string, type?: "success" | "error") => void;
 
 export function GlobalSettingsView() {
@@ -28,11 +29,15 @@ export function GlobalSettingsView() {
         <button className={section === "extensions" ? "active" : ""} onClick={() => setSection("extensions")}>
           {t("globalSettings.nav.extensions")}
         </button>
+        <button className={section === "updates" ? "active" : ""} onClick={() => setSection("updates")}>
+          {t("globalSettings.nav.updates")}
+        </button>
       </nav>
 
       <div className="settings-panel">
         {section === "language" && <LanguageSection onToast={showToast} />}
         {section === "extensions" && <ExtensionsSection onToast={showToast} />}
+        {section === "updates" && <UpdatesSection />}
       </div>
 
       {toast && (
@@ -151,6 +156,65 @@ function ExtensionsSection({ onToast }: { onToast: ToastFn }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function UpdatesSection() {
+  const { t } = useTranslation();
+  const updater = useUpdater();
+  const [auto, setAuto] = useState(true);
+
+  useEffect(() => {
+    api.getAutoUpdateCheck().then(setAuto);
+  }, []);
+
+  function toggleAuto(enabled: boolean) {
+    setAuto(enabled);
+    api.setAutoUpdateCheck(enabled);
+  }
+
+  const { update, status, progress, error } = updater;
+  const installing = status === "installing";
+
+  return (
+    <div className="settings-section">
+      <h2>{t("globalSettings.updates.title")}</h2>
+      <small>{t("globalSettings.updates.currentVersion", { version: __APP_VERSION__ })}</small>
+
+      <div className="settings-field">
+        <label className="settings-field-row">
+          <span>{t("globalSettings.updates.autoLabel")}</span>
+          <input type="checkbox" checked={auto} onChange={(e) => toggleAuto(e.target.checked)} />
+        </label>
+        <small>{t("globalSettings.updates.autoHint")}</small>
+      </div>
+
+      <div className="settings-actions">
+        <button onClick={updater.check} disabled={status === "checking" || installing}>
+          {status === "checking" ? t("update.checking") : t("update.checkNow")}
+        </button>
+        {update && (
+          <button onClick={updater.install} disabled={installing}>
+            {t("update.installNowVersion", { version: update.version })}
+          </button>
+        )}
+      </div>
+
+      <p className="update-status" role="status">
+        {installing
+          ? progress !== null
+            ? t("update.downloading", { percent: progress })
+            : t("update.installing")
+          : status === "upToDate"
+            ? t("update.upToDate")
+            : update
+              ? t("update.available", { version: update.version })
+              : status === "error" && error
+                ? t("update.failed", { error })
+                : ""}
+      </p>
+      {update && !installing && <small>{t("update.closeNotice")}</small>}
     </div>
   );
 }

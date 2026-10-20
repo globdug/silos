@@ -1299,3 +1299,52 @@ button.danger-ghost:hover {
     animation: none;
   }
 }
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  padding: 0.7rem 1rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+}
+
+.update-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.update-banner-text small {
+  color: var(--text-muted);
+}
+
+.update-banner-error {
+  color: var(--danger) !important;
+}
+
+.update-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.update-status {
+  min-height: 1.4em;
+  margin: 0.8rem 0 0.3rem;
+  font-size: 0.85rem;
+}
+
+.dashboard-footer-update {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.dashboard-footer-update:hover {
+  color: var(--text);
+  text-decoration: underline;
+}

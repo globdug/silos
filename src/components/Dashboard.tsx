@@ -7,6 +7,8 @@ import { SiteSearch } from "./SiteSearch";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { GearIcon, GitHubIcon, LockIcon, TrashIcon } from "./icons";
 import { ConfirmTyped } from "./ConfirmTyped";
+import { UpdateBanner } from "./UpdateBanner";
+import { useUpdater } from "../useUpdater";
 import logo from "../assets/logo.png";
 
 interface Props {
@@ -32,6 +34,8 @@ export function Dashboard({ apps, onSelect, onCreate, onDelete, onOpenGlobalSett
   const [deleting, setDeleting] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const updater = useUpdater();
+  const [dismissedVersion, setDismissedVersion] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(message: string) {
@@ -83,8 +87,36 @@ export function Dashboard({ apps, onSelect, onCreate, onDelete, onOpenGlobalSett
     });
   }, [apps]);
 
+  // Background check on open and every 6 hours (skipped in dev builds, and
+  // when switched off in the global settings).
+  useEffect(() => {
+    if (import.meta.env.DEV) return;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    api.getAutoUpdateCheck().then((enabled) => {
+      if (!enabled) return;
+      updater.check();
+      timer = setInterval(
+        () => {
+          api.getAutoUpdateCheck().then((on) => {
+            if (on) updater.check();
+          });
+        },
+        6 * 60 * 60 * 1000,
+      );
+    });
+    return () => clearInterval(timer);
+  }, []);
+
+  async function checkNow() {
+    const found = await updater.check();
+    if (!found) showToast(t("update.upToDate"));
+  }
+
   return (
     <div className="dashboard">
+      {updater.update && updater.update.version !== dismissedVersion && (
+        <UpdateBanner updater={updater} onDismiss={() => setDismissedVersion(updater.update!.version)} />
+      )}
       <div className="dashboard-header">
         <div className="dashboard-title">
           <img src={logo} alt="" className="dashboard-logo" />
@@ -209,6 +241,16 @@ export function Dashboard({ apps, onSelect, onCreate, onDelete, onOpenGlobalSett
             commit: __COMMIT_HASH__,
           })}
         </span>
+        <a
+          href="#"
+          className="dashboard-footer-update"
+          onClick={(e) => {
+            e.preventDefault();
+            checkNow();
+          }}
+        >
+          {updater.status === "checking" ? t("update.checking") : t("update.checkNow")}
+        </a>
         <a
           href="#"
           className="dashboard-footer-github"

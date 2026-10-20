@@ -108,7 +108,14 @@
   "globalSettings": {
     "nav": {
       "language": "Lingua",
-      "extensions": "Estensioni"
+      "extensions": "Estensioni",
+      "updates": "Aggiornamenti"
+    },
+    "updates": {
+      "title": "Aggiornamenti",
+      "currentVersion": "Versione attuale: {{version}}",
+      "autoLabel": "Controlla gli aggiornamenti automaticamente",
+      "autoHint": "Controlla GitHub all'apertura di Silos e ogni poche ore. Nulla viene installato senza la tua conferma."
     },
     "language": {
       "title": "Lingua",
@@ -234,6 +241,20 @@
     "homeTitle": "Home",
     "urlPlaceholder": "Indirizzo",
     "downloadsTitle": "Download"
+  },
+  "update": {
+    "available": "È disponibile Silos {{version}}",
+    "closeNotice": "L'aggiornamento chiude tutte le app aperte e le riapre dopo.",
+    "downloading": "Download in corso… {{percent}}%",
+    "installing": "Installazione…",
+    "failed": "Aggiornamento non riuscito: {{error}}",
+    "notes": "Note di rilascio",
+    "later": "Dopo",
+    "installNow": "Aggiorna ora",
+    "installNowVersion": "Aggiorna alla {{version}}",
+    "checkNow": "Controlla aggiornamenti",
+    "checking": "Controllo…",
+    "upToDate": "Silos è aggiornato."
   },
   "downloads": {
     "title": "Download",

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-20
+
+### Added
+- Self-update: Silos checks the latest GitHub release when it opens and every 6 hours (can be turned off in Global settings → Updates) and shows a banner on the dashboard with "Update now". There's also a manual "Check for updates" link in the dashboard footer and in Global settings. The new `silos.exe` is verified against the SHA-256 published with the release before replacing the running one; all open apps are closed for the swap and the ones that were open (including those hidden in the tray) are reopened afterwards. Needs write access to the folder `silos.exe` lives in. Releases built by CI now also publish `silos.exe.sha256`. Versions up to 0.2.0 don't have the updater, so the first update to a version with it has to be done by hand.
+
 ## [0.2.0] - 2026-10-20
 
 ### Changed

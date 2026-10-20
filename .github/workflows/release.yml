@@ -27,8 +27,18 @@ jobs:
       - name: Build (frontend + Tauri release binary)
         run: npm run tauri build
 
+      # The in-app updater downloads this next to silos.exe and refuses to
+      # install an exe whose SHA-256 doesn't match.
+      - name: Compute SHA-256
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash src-tauri/target/release/silos.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  silos.exe" | Out-File -FilePath src-tauri/target/release/silos.exe.sha256 -Encoding ascii -NoNewline
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: src-tauri/target/release/silos.exe
+          files: |
+            src-tauri/target/release/silos.exe
+            src-tauri/target/release/silos.exe.sha256
           generate_release_notes: true

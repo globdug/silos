@@ -3219,3 +3219,148 @@ mod site_search_tests {
         assert_eq!((trimmed.width(), trimmed.height()), (50, 50));
     }
 }
+
+// ---------------------------------------------------------------------
+// Self-update (see `updater.rs`)
+// ---------------------------------------------------------------------
+
+/// What's open right now, in the form `--reopen` carries across a restart:
+/// `"dash"` for the dashboard, `"<app_id>"` for a visible app window and
+/// `"<app_id>:bg"` for one tucked into the tray.
+pub fn open_apps_snapshot(app_handle: &AppHandle) -> Vec<String> {
+    let background = app_handle.state::<BackgroundApps>().0.lock().unwrap().clone();
+    let ids: Vec<String> = app_handle
+        .state::<Store>()
+        .config
+        .lock()
+        .unwrap()
+        .apps
+        .iter()
+        .map(|a| a.id.clone())
+        .collect();
+
+    let mut entries = Vec::new();
+    if app_handle.get_webview_window("main").is_some() {
+        entries.push("dash".to_string());
+    }
+    for id in ids {
+        if app_handle.get_window(&app_window_label(&id)).is_some() {
+            entries.push(if background.contains(&id) { format!("{id}:bg") } else { id });
+        }
+    }
+    entries
+}
+
+/// Destroys every app window (visible or backgrounded) so each one saves the
+/// page its subspaces were on — see `remember_last_tabs_and_clear`.
+pub fn close_all_apps(app_handle: &AppHandle) {
+    for entry in open_apps_snapshot(app_handle) {
+        if entry == "dash" {
+            continue;
+        }
+        close_background_app(app_handle, entry.trim_end_matches(":bg"));
+    }
+}
+
+/// Reopens what `open_apps_snapshot` listed. Apps that were in the tray are
+/// opened and immediately hidden again; protected apps come back behind
+/// their PIN prompt, same as a shortcut launch.
+pub async fn reopen_apps(app_handle: AppHandle, entries: Vec<String>) {
+    for entry in entries {
+        if entry == "dash" {
+            crate::show_dashboard(&app_handle);
+            continue;
+        }
+        let (app_id, was_background) = match entry.strip_suffix(":bg") {
+            Some(id) => (id.to_string(), true),
+            None => (entry.clone(), false),
+        };
+        let opened = open_app(
+            app_handle.clone(),
+            app_handle.state(),
+            app_handle.state(),
+            app_handle.state(),
+            app_id.clone(),
+            None,
+        )
+        .await;
+        if opened.is_ok() && was_background {
+            if let Some(window) = app_handle.get_window(&app_window_label(&app_id)) {
+                let _ = window.hide();
+            }
+            background_app(&app_handle, &app_id);
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn check_for_update() -> Result<Option<crate::updater::UpdateInfo>, String> {
+    Ok(crate::updater::find_update().await?.map(|p| p.info))
+}
+
+/// Downloads and verifies the latest release, then swaps the running exe for
+/// it and restarts. It re-fetches the release itself rather than trusting a
+/// URL from the frontend. Nothing is closed or replaced until the download
+/// has been verified.
+#[tauri::command]
+pub async fn install_update(app_handle: AppHandle) -> Result<(), String> {
+    let picked = crate::updater::find_update().await?.ok_or("no update available")?;
+
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dir = exe.parent().ok_or("cannot locate the app folder")?.to_path_buf();
+    let new_path = dir.join("silos.new.exe");
+    let old_path = dir.join("silos.old.exe");
+
+    let progress_handle = app_handle.clone();
+    let bytes = crate::updater::download(&picked.exe_url, move |done, total| {
+        let _ = progress_handle.emit("update-progress", (done, total));
+    })
+    .await?;
+    let sha_bytes = crate::updater::download(&picked.sha_url, |_, _| {}).await?;
+    if !crate::updater::verify_sha256(&bytes, &String::from_utf8_lossy(&sha_bytes)) {
+        return Err("checksum mismatch".to_string());
+    }
+
+    std::fs::write(&new_path, &bytes).map_err(|e| format!("cannot write to the app folder: {e}"))?;
+
+    let snapshot = open_apps_snapshot(&app_handle);
+    close_all_apps(&app_handle);
+    // Window teardown (which saves each subspace's last page) is dispatched to
+    // the main thread; give it a moment before the process goes away.
+    let _ = tauri::async_runtime::spawn_blocking(|| std::thread::sleep(std::time::Duration::from_millis(800))).await;
+
+    let _ = std::fs::remove_file(&old_path);
+    let rollback = |reason: String| async {
+        reopen_apps(app_handle.clone(), snapshot.clone()).await;
+        Err::<(), String>(reason)
+    };
+    if let Err(e) = std::fs::rename(&exe, &old_path) {
+        let _ = std::fs::remove_file(&new_path);
+        return rollback(format!("cannot replace the app: {e}")).await;
+    }
+    if let Err(e) = std::fs::rename(&new_path, &exe) {
+        let _ = std::fs::rename(&old_path, &exe);
+        return rollback(format!("cannot replace the app: {e}")).await;
+    }
+
+    std::process::Command::new(&exe)
+        .arg("--updated-from")
+        .arg(std::process::id().to_string())
+        .arg("--reopen")
+        .arg(snapshot.join(","))
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    app_handle.exit(0);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_auto_update_check(store: State<Store>) -> bool {
+    !store.config.lock().unwrap().auto_update_check_disabled
+}
+
+#[tauri::command]
+pub fn set_auto_update_check(store: State<Store>, enabled: bool) {
+    store.config.lock().unwrap().auto_update_check_disabled = !enabled;
+    store.save();
+}

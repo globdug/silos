@@ -3749,7 +3749,7 @@ dependencies = [
 
 [[package]]
 name = "silos"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "argon2",
  "base64 0.22.1",
@@ -3764,6 +3764,7 @@ dependencies = [
  "resvg",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-clipboard-manager",

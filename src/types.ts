@@ -64,6 +64,11 @@ export interface WebApp {
   subspaces: Subspace[];
 }
 
+export interface UpdateInfo {
+  version: string;
+  notes_url: string;
+}
+
 export interface DownloadItem {
   id: string;
   file_name: string;
