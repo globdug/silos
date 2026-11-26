@@ -226,6 +226,7 @@ pub fn run() {
             commands::create_app,
             commands::delete_app,
             commands::create_subspace,
+            commands::regenerate_shortcut,
             commands::delete_subspace,
             commands::set_subspace_session_group,
             commands::open_app,

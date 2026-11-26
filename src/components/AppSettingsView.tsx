@@ -5,6 +5,7 @@ import { api } from "../api";
 import { IconPicker } from "./IconPicker";
 import { DEFAULT_ICON_BG } from "../colors";
 import { ConfirmTyped } from "./ConfirmTyped";
+import { RefreshIcon } from "./icons";
 
 interface Props {
   appId: string;
@@ -152,6 +153,15 @@ function InfoSection({ app, onChanged, onToast }: { app: WebApp; onChanged: () =
     }
   }
 
+  async function regenerateShortcut() {
+    try {
+      await api.regenerateShortcut(app.id);
+      onToast(t("appSettings.info.shortcutDone"));
+    } catch {
+      onToast(t("appSettings.info.shortcutFailed"), "error");
+    }
+  }
+
   return (
     <div className="settings-section">
       <h2>{t("appSettings.info.title")}</h2>
@@ -218,6 +228,15 @@ function InfoSection({ app, onChanged, onToast }: { app: WebApp; onChanged: () =
           <small>{t("appSettings.info.hibernateDelayHint")}</small>
         </label>
       )}
+
+      <h3 className="settings-group-heading">{t("appSettings.info.shortcutHeading")}</h3>
+
+      <div className="settings-field">
+        <small>{t("appSettings.info.shortcutHint")}</small>
+        <button className="ghost btn-icon-label settings-field-button" onClick={regenerateShortcut}>
+          <RefreshIcon size={14} /> {t("appSettings.info.shortcutButton")}
+        </button>
+      </div>
 
       {isDirty && (
         <div className="settings-actions">

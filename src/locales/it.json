@@ -14,6 +14,9 @@
     "emptyState": "Nessuna app ancora. Cercane una sopra per iniziare.",
     "appSettingsTitle": "Impostazioni app",
     "deleteAppTitle": "Elimina app",
+    "regenerateShortcutTitle": "Rigenera collegamento nel menu Start",
+    "shortcutRegeneratedToast": "Collegamento di {{name}} nel menu Start rigenerato.",
+    "shortcutRegenerateFailedToast": "Impossibile rigenerare il collegamento di {{name}} nel menu Start.",
     "protectedByPin": ", protetta da PIN",
     "pinLockTitle": "Protetta da PIN",
     "subspaceCount_one": "{{count}} sottospazio",
@@ -50,7 +53,12 @@
       "eagerLoadLabel": "Carica subito tutti i sottospazi",
       "eagerLoadHint": "Attivo di default: tutti i sottospazi partono insieme all'app, utile per ricevere notifiche da tutti (es. più account WhatsApp). Disattivalo per caricarli solo al primo click.",
       "hibernateDelayLabel": "Sospendi sottospazio dopo (minuti)",
-      "hibernateDelayHint": "Passando a un altro sottospazio, quello lasciato viene chiuso (libera memoria) dopo questo tempo di inattività, se non ci torni prima. 0 = subito."
+      "hibernateDelayHint": "Passando a un altro sottospazio, quello lasciato viene chiuso (libera memoria) dopo questo tempo di inattività, se non ci torni prima. 0 = subito.",
+      "shortcutHeading": "Collegamento nel menu Start",
+      "shortcutHint": "Riscrive il collegamento dal nome e dall'icona attuali dell'app, puntando a questo silos.exe. Usalo se il collegamento manca, ha l'icona sbagliata o ha smesso di funzionare dopo aver spostato la cartella di Silos.",
+      "shortcutButton": "Rigenera collegamento",
+      "shortcutDone": "Collegamento nel menu Start rigenerato.",
+      "shortcutFailed": "Impossibile rigenerare il collegamento nel menu Start."
     },
     "icon": {
       "title": "Icona",

@@ -5,7 +5,7 @@ import type { WebApp } from "../types";
 import { api } from "../api";
 import { SiteSearch } from "./SiteSearch";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { GearIcon, GitHubIcon, LockIcon, TrashIcon } from "./icons";
+import { GearIcon, GitHubIcon, LockIcon, RefreshIcon, TrashIcon } from "./icons";
 import { ConfirmTyped } from "./ConfirmTyped";
 import { UpdateBanner } from "./UpdateBanner";
 import { useUpdater } from "../useUpdater";
@@ -42,6 +42,15 @@ export function Dashboard({ apps, onSelect, onCreate, onDelete, onOpenGlobalSett
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(message);
     toastTimer.current = setTimeout(() => setToast(null), durationMs);
+  }
+
+  async function handleRegenerateShortcut(app: WebApp) {
+    try {
+      await api.regenerateShortcut(app.id);
+      showToast(t("dashboard.shortcutRegeneratedToast", { name: app.name }));
+    } catch {
+      showToast(t("dashboard.shortcutRegenerateFailedToast", { name: app.name }), 5000);
+    }
   }
 
   function openApp(app: WebApp) {
@@ -175,6 +184,16 @@ export function Dashboard({ apps, onSelect, onCreate, onDelete, onOpenGlobalSett
                   title={t("dashboard.appSettingsTitle")}
                 >
                   <GearIcon size={14} />
+                </button>
+                <button
+                  className="app-card-settings ghost btn-icon-label"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRegenerateShortcut(app);
+                  }}
+                  title={t("dashboard.regenerateShortcutTitle")}
+                >
+                  <RefreshIcon size={14} />
                 </button>
                 <button
                   className="app-card-delete danger-ghost"

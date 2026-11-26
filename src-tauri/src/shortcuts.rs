@@ -111,6 +111,10 @@ pub(crate) fn render_icon(source: &str, background: Option<&str>, padding_percen
 /// picked), if any; each platform falls back to its own default (the exe's
 /// icon on Windows) otherwise. `data_slug` must match the one used for the
 /// webapp window's own platform identity (AUMID on Windows).
+///
+/// Returns whether the shortcut was written. Only the Windows module reports
+/// that; the macOS/Linux ones (unverified drafts, see CLAUDE.md) still return
+/// nothing, so there it just says `true`.
 pub fn create_shortcut(
     app_id: &str,
     data_slug: &str,
@@ -119,8 +123,9 @@ pub fn create_shortcut(
     icon_background: Option<&str>,
     icon_padding_percent: u8,
     icon_rounded: bool,
-) {
-    crate::platform::shortcuts::create_shortcut(
+) -> bool {
+    #[cfg(windows)]
+    return crate::platform::shortcuts::create_shortcut(
         app_id,
         data_slug,
         app_name,
@@ -129,6 +134,19 @@ pub fn create_shortcut(
         icon_padding_percent,
         icon_rounded,
     );
+    #[cfg(not(windows))]
+    {
+        crate::platform::shortcuts::create_shortcut(
+            app_id,
+            data_slug,
+            app_name,
+            icon_source,
+            icon_background,
+            icon_padding_percent,
+            icon_rounded,
+        );
+        true
+    }
 }
 
 pub fn remove_shortcut(app_id: &str, app_name: &str) {

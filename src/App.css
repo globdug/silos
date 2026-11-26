@@ -746,6 +746,13 @@ button.danger-ghost:hover {
   margin-bottom: 1.2rem;
 }
 
+/* A standalone action button inside a field (not a Save/Cancel bar): sits
+   under the hint at its natural width instead of stretching the column. */
+.settings-field-button {
+  align-self: flex-start;
+  margin-top: 0.4rem;
+}
+
 .settings-field > span {
   font-size: 0.8rem;
   font-weight: 600;

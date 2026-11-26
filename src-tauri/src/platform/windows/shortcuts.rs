@@ -72,6 +72,8 @@ fn build_icon(source: &str, app_id: &str, background: Option<&str>, padding_perc
 /// the same ID here is what lets toast notifications for this app be shown
 /// at all (an unregistered AUMID is rejected by
 /// `ToastNotificationManager::CreateToastNotifierWithId`).
+///
+/// Returns whether the `.lnk` was actually written.
 pub fn create_shortcut(
     app_id: &str,
     data_slug: &str,
@@ -80,16 +82,16 @@ pub fn create_shortcut(
     icon_background: Option<&str>,
     icon_padding_percent: u8,
     icon_rounded: bool,
-) {
-    let Some(dir) = start_menu_dir() else { return };
-    let Some(path) = shortcut_path(app_name) else { return };
-    let Ok(exe) = std::env::current_exe() else { return };
+) -> bool {
+    let Some(dir) = start_menu_dir() else { return false };
+    let Some(path) = shortcut_path(app_name) else { return false };
+    let Ok(exe) = std::env::current_exe() else { return false };
 
     if std::fs::create_dir_all(&dir).is_err() {
-        return;
+        return false;
     }
 
-    let Ok(mut link) = ShellLink::new(&exe) else { return };
+    let Ok(mut link) = ShellLink::new(&exe) else { return false };
     link.set_name(Some(app_name.to_string()));
     link.set_arguments(Some(format!("--open-app {app_id}")));
 
@@ -100,9 +102,11 @@ pub fn create_shortcut(
         .or_else(|| exe.to_str().map(|s| s.to_string()));
     link.set_icon_location(icon);
 
-    if link.create_lnk(&path).is_ok() {
-        super::winid::set_shortcut_app_id(&path, &super::winid::aumid_for_slug("Silos.WebApp", data_slug));
+    if link.create_lnk(&path).is_err() {
+        return false;
     }
+    super::winid::set_shortcut_app_id(&path, &super::winid::aumid_for_slug("Silos.WebApp", data_slug));
+    true
 }
 
 pub fn remove_shortcut(_app_id: &str, app_name: &str) {

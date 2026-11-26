@@ -468,6 +468,38 @@ pub fn delete_app(app_handle: AppHandle, store: State<Store>, app_id: String) {
     }
 }
 
+/// Rewrites this app's launcher shortcut (Start Menu `.lnk` on Windows) from
+/// its current name, icon and style, pointing at the `silos.exe` that is
+/// running now. For a shortcut that went missing, has a stale icon, or still
+/// points at an old location after the portable folder was moved — launching
+/// the app regenerates it too, but only for the apps that get launched.
+#[tauri::command]
+pub fn regenerate_shortcut(store: State<Store>, app_id: String) -> Result<(), String> {
+    let app = store
+        .config
+        .lock()
+        .unwrap()
+        .apps
+        .iter()
+        .find(|a| a.id == app_id)
+        .cloned()
+        .ok_or("app not found")?;
+    let created = crate::shortcuts::create_shortcut(
+        &app.id,
+        &app.data_slug,
+        &app.name,
+        app.icon.as_deref(),
+        app.icon_background_color.as_deref(),
+        app.icon_style.padding_percent,
+        app.icon_style.rounded,
+    );
+    if created {
+        Ok(())
+    } else {
+        Err("could not write the shortcut".to_string())
+    }
+}
+
 #[tauri::command]
 pub fn create_subspace(
     app_handle: AppHandle,

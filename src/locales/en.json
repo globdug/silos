@@ -14,6 +14,9 @@
     "emptyState": "No apps yet. Search for one above to get started.",
     "appSettingsTitle": "App settings",
     "deleteAppTitle": "Delete app",
+    "regenerateShortcutTitle": "Rebuild Start menu shortcut",
+    "shortcutRegeneratedToast": "Start menu shortcut for {{name}} rebuilt.",
+    "shortcutRegenerateFailedToast": "Couldn't rebuild the Start menu shortcut for {{name}}.",
     "protectedByPin": ", PIN protected",
     "pinLockTitle": "PIN protected",
     "subspaceCount_one": "{{count}} subspace",
@@ -50,7 +53,12 @@
       "eagerLoadLabel": "Load all subspaces immediately",
       "eagerLoadHint": "On by default: every subspace starts together with the app, useful for receiving notifications from all of them (e.g. multiple WhatsApp accounts). Turn it off to load them only on first click instead.",
       "hibernateDelayLabel": "Suspend subspace after (minutes)",
-      "hibernateDelayHint": "Switching to another subspace closes the one you left (freeing memory) after this idle time, unless you come back to it first. 0 = immediately."
+      "hibernateDelayHint": "Switching to another subspace closes the one you left (freeing memory) after this idle time, unless you come back to it first. 0 = immediately.",
+      "shortcutHeading": "Start menu shortcut",
+      "shortcutHint": "Writes the shortcut again from the app's current name and icon, pointing at this silos.exe. Use it if the shortcut is missing, shows the wrong icon, or stopped working after you moved the Silos folder.",
+      "shortcutButton": "Rebuild shortcut",
+      "shortcutDone": "Start menu shortcut rebuilt.",
+      "shortcutFailed": "Couldn't rebuild the Start menu shortcut."
     },
     "icon": {
       "title": "Icon",

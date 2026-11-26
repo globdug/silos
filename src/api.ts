@@ -27,6 +27,9 @@ export const api = {
 
   deleteApp: (appId: string) => invoke<void>("delete_app", { appId }),
 
+  /// Rewrites the app's Start menu shortcut; rejects if it couldn't be written.
+  regenerateShortcut: (appId: string) => invoke<void>("regenerate_shortcut", { appId }),
+
   createSubspace: (
     appId: string,
     name: string,
