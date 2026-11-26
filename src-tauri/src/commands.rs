@@ -1998,7 +1998,11 @@ fn open_tab_internal(
     // builder's implicit first navigation and our post-creation
     // `with_webview` setup are dispatched onto the same webview thread with
     // no ordering guarantee between them.
-    let webview_url = if ignore_certificate_errors {
+    //
+    // The same deferral is used on Windows for `remove_wry_ipc_bridge`, which
+    // has to take effect before the first document is created.
+    let defer_navigation = ignore_certificate_errors || cfg!(windows);
+    let webview_url = if defer_navigation {
         WebviewUrl::External("about:blank".parse().unwrap())
     } else {
         WebviewUrl::External(target_url.clone())
@@ -2133,8 +2137,12 @@ fn open_tab_internal(
     crate::platform::webview::setup_web_notifications(app_handle, &data_slug, app_id, &tab_webview);
     crate::platform::webview::setup_password_autosave(&tab_webview);
     crate::platform::webview::setup_zoom_indicator(&tab_webview);
+    #[cfg(windows)]
+    crate::platform::webview::remove_wry_ipc_bridge(&tab_webview);
     if ignore_certificate_errors {
         crate::platform::webview::allow_self_signed_certificates(&tab_webview);
+    }
+    if defer_navigation {
         let _ = tab_webview.navigate(target_url);
     }
 

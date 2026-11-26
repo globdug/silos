@@ -110,6 +110,40 @@ pub fn setup_password_autosave(webview: &tauri::webview::Webview) {
     });
 }
 
+/// Removes wry's `window.ipc` bridge from a tab's webview.
+///
+/// wry registers `Object.defineProperty(window, 'ipc', { value: ... })` as a
+/// document-created script on every webview, which leaves a non-configurable
+/// global `ipc`. Any page whose own script declares a top-level
+/// `let/const/class ipc` then dies with `SyntaxError: Identifier 'ipc' has
+/// already been declared` — Google Docs/Slides/Sheets do exactly that, so
+/// their homescreens never initialised and showed "Problema di caricamento".
+/// Tab content never talks to the host through that bridge (it has no Tauri
+/// command access), so the script can go. It can't be undone from a later
+/// script because the property isn't configurable; removing the registration
+/// is the only way.
+///
+/// WebView2 numbers a webview's document-created scripts 1, 2, 3...: id "1"
+/// is WebView2's own (the `window.chrome.webview` bridge) and wry registers its
+/// `ipc` script right after, in `attach_ipc_handler` and ahead of every
+/// initialization script, so it is always id "2". Verified against wry 0.55:
+/// removing "2" leaves `window.ipc` undefined for the page while Tauri's own
+/// scripts (ids 3+) stay in place. Re-check after upgrading wry/Tauri
+/// (`typeof ipc` in a tab must not be a frozen object). Must run before the
+/// first page loads — callers create the tab on `about:blank` and navigate
+/// afterwards.
+pub fn remove_wry_ipc_bridge(webview: &tauri::webview::Webview) {
+    use windows::core::HSTRING;
+
+    let _ = webview.with_webview(move |pw| {
+        let controller = pw.controller();
+        unsafe {
+            let Ok(core) = controller.CoreWebView2() else { return };
+            let _ = core.RemoveScriptToExecuteOnDocumentCreated(&HSTRING::from("2"));
+        }
+    });
+}
+
 /// Silently accepts TLS certificate errors (expired/self-signed/hostname
 /// mismatch) instead of showing WebView2's interstitial warning page. Scoped
 /// to this one webview's `ICoreWebView2` — since every subspace already gets

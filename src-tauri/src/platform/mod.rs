@@ -42,7 +42,7 @@ pub mod shortcuts {
 
 pub mod webview {
     #[cfg(windows)]
-    pub use super::windows::webview_ext::{allow_self_signed_certificates, setup_password_autosave, setup_web_notifications, setup_zoom_indicator};
+    pub use super::windows::webview_ext::{allow_self_signed_certificates, remove_wry_ipc_bridge, setup_password_autosave, setup_web_notifications, setup_zoom_indicator};
     #[cfg(target_os = "macos")]
     pub use super::macos::webview_ext::{allow_self_signed_certificates, mac_data_store_id, setup_password_autosave, setup_web_notifications, setup_zoom_indicator};
     #[cfg(target_os = "linux")]
