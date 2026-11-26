@@ -38,10 +38,10 @@ export function Dashboard({ apps, onSelect, onCreate, onDelete, onOpenGlobalSett
   const [dismissedVersion, setDismissedVersion] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function showToast(message: string) {
+  function showToast(message: string, durationMs = 2500) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(message);
-    toastTimer.current = setTimeout(() => setToast(null), 2500);
+    toastTimer.current = setTimeout(() => setToast(null), durationMs);
   }
 
   function openApp(app: WebApp) {
@@ -107,9 +107,19 @@ export function Dashboard({ apps, onSelect, onCreate, onDelete, onOpenGlobalSett
     return () => clearInterval(timer);
   }, []);
 
+  // The update banner sits at the top of the dashboard while this is clicked
+  // in the footer, so every outcome gets a toast. A manual check also brings
+  // back a banner that was dismissed earlier.
   async function checkNow() {
-    const found = await updater.check();
-    if (!found) showToast(t("update.upToDate"));
+    const { update, error } = await updater.check();
+    if (error) {
+      showToast(t("update.failed", { error }), 5000);
+    } else if (update) {
+      setDismissedVersion(null);
+      showToast(t("update.available", { version: update.version }));
+    } else {
+      showToast(t("update.upToDate"));
+    }
   }
 
   return (
