@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-26
+
+### Added
+- New subspace from a tab: a button in the toolbar, next to Home, opens the "New subspace" popup prefilled from the active tab. Its title becomes the name, its URL the subspace's start page, and the session defaults to shared with the subspace you're in (switchable to isolated or another group). The icon is the favicon the page itself is showing, so pages behind a login (Google Docs, Gmail, Calendar...) get their real icon. The new subspace shows up in the sidebar; the tab stays open. The favicon is read from the page on Windows; on other systems it's fetched from the site.
+
+### Fixed
+- The popup's "Favicon del sito" button, when opened from a tab, now re-reads that tab's favicon instead of fetching the site logged out, which gave Google's generic logo for any signed-in Google service. If the page can't be read and the fetch ends up on another host (a login page), no icon is picked rather than that site's.
+- Icons downloaded from servers that send gzip-compressed responses without being asked (Gmail's, for one) were saved still compressed and couldn't be displayed. They're now decompressed. Icons saved before this fix stay unreadable and need to be picked again.
+
 ## [0.3.5] - 2026-11-26
 
 ### Fixed
