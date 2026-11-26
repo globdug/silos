@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-26
+
+### Fixed
+- The toolbar's Home button kept going to the old start URL after changing a subspace's start URL in its settings, until the app was closed and reopened. Home now looks up the current start URL when clicked.
+
 ## [0.3.2] - 2026-10-20
 
 ### Changed
