@@ -128,7 +128,17 @@ pub fn run() {
     // is created (the first webview build), so it has to happen before
     // `tauri::Builder::default()` does anything that could create one.
     #[cfg(windows)]
-    std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-features=CalculateNativeWinOcclusion,DirectCompositionSoftwareOverlays");
+    {
+        #[allow(unused_mut)]
+        let mut args = String::from("--disable-features=CalculateNativeWinOcclusion,DirectCompositionSoftwareOverlays");
+        // Dev builds only: let CDP clients attach to the tab webviews. Port 0
+        // because every subspace has its own WebView2 environment and a fixed
+        // port could only be bound by the first one; each environment writes
+        // the port it got to `DevToolsActivePort` in its user data dir.
+        #[cfg(debug_assertions)]
+        args.push_str(" --remote-debugging-port=0 --remote-allow-origins=*");
+        std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", args);
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
