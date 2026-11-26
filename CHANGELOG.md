@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-11-26
+
+### Changed
+- "Check for updates" in the dashboard footer now shows a toast when a newer version is found ("Silos X is available"), since the update banner it triggers sits at the top of the dashboard, out of sight of the footer link. It also brings back the banner if it was dismissed earlier.
+
+### Fixed
+- "Check for updates" in the dashboard footer showed "Silos is up to date." even when the check itself failed (no network, GitHub unreachable...). It now shows the error instead.
+
 ## [0.3.3] - 2026-11-26
 
 ### Fixed
