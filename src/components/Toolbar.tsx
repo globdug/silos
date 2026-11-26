@@ -16,7 +16,6 @@ export function Toolbar({ appId, subspaceId }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState("");
   const [editingUrl, setEditingUrl] = useState(false);
-  const [homeUrl, setHomeUrl] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [unseenDownloads, setUnseenDownloads] = useState(0);
   const [flashKey, setFlashKey] = useState(0);
@@ -75,13 +74,17 @@ export function Toolbar({ appId, subspaceId }: Props) {
     };
   }, [appId]);
 
-  useEffect(() => {
-    api.listApps().then((apps) => {
-      const app = apps.find((a) => a.id === appId);
-      const subspace = app?.subspaces.find((s) => s.id === subspaceId);
-      setHomeUrl(subspace?.start_url ?? app?.url ?? null);
-    });
-  }, [appId, subspaceId]);
+  // Resolved at click time, not cached: the start URL can be edited in the
+  // subspace settings while this toolbar stays mounted, and a cached value
+  // would keep sending Home to the old URL.
+  async function handleHome() {
+    if (!activeId) return;
+    const apps = await api.listApps();
+    const app = apps.find((a) => a.id === appId);
+    const subspace = app?.subspaces.find((s) => s.id === subspaceId);
+    const homeUrl = subspace?.start_url ?? app?.url;
+    if (homeUrl) await api.navigateTab(appId, subspaceId, activeId, homeUrl);
+  }
 
   const activeTab = tabs.find((t) => t.id === activeId) ?? null;
 
@@ -155,8 +158,8 @@ export function Toolbar({ appId, subspaceId }: Props) {
         </button>
         <button
           className="ghost toolbar-nav-btn"
-          disabled={!homeUrl}
-          onClick={() => activeId && homeUrl && api.navigateTab(appId, subspaceId, activeId, homeUrl)}
+          disabled={!activeId}
+          onClick={handleHome}
           title={t("toolbar.homeTitle")}
         >
           ⌂
