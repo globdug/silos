@@ -117,7 +117,19 @@ export const api = {
 
   getSidebarExpanded: (appId: string) => invoke<boolean>("get_sidebar_expanded", { appId }),
 
-  openAddSubspacePopup: (appId: string) => invoke<void>("open_add_subspace_popup", { appId }),
+  /// With `from`, the popup opens prefilled from that tab (see `AddSubspacePopup`).
+  openAddSubspacePopup: (appId: string, from?: { url: string; name: string; subspaceId: string; tabId: string }) =>
+    invoke<void>("open_add_subspace_popup", {
+      appId,
+      fromUrl: from?.url ?? null,
+      fromName: from?.name ?? null,
+      fromSubspaceId: from?.subspaceId ?? null,
+      fromTabId: from?.tabId ?? null,
+    }),
+
+  /// Icon of the page open in a tab, as a cached file path.
+  getTabIcon: (appId: string, subspaceId: string, tabId: string) =>
+    invoke<string>("get_tab_icon", { appId, subspaceId, tabId }),
 
   openQuitConfirmPopup: (appId: string) => invoke<void>("open_quit_confirm_popup", { appId }),
 

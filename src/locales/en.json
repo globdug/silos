@@ -239,6 +239,7 @@
     "forwardTitle": "Forward",
     "reloadTitle": "Reload",
     "homeTitle": "Home",
+    "newSubspaceFromTabTitle": "New subspace from this tab",
     "urlPlaceholder": "Address",
     "downloadsTitle": "Downloads"
   },

@@ -237,6 +237,7 @@ pub fn run() {
             commands::set_app_icon,
             commands::resolve_site,
             commands::fetch_favicon_for_url,
+            commands::get_tab_icon,
             commands::pick_local_icon,
             commands::get_macos_icons_api_key,
             commands::set_macos_icons_api_key,

@@ -19,6 +19,10 @@ const settingsApp = params.get("settingsApp");
 const settingsSubspace = params.get("settingsSubspace");
 const settingsForApp = params.get("settingsForApp");
 const addPopupFor = params.get("addPopupFor");
+const addUrl = params.get("addUrl");
+const addName = params.get("addName");
+const addFromSubspace = params.get("addFromSubspace");
+const addFromTab = params.get("addFromTab");
 const quitConfirmFor = params.get("quitConfirmFor");
 const downloadsPopupFor = params.get("downloadsPopupFor");
 const toolbarApp = params.get("toolbarApp");
@@ -77,7 +81,11 @@ function App() {
     return <Toolbar appId={toolbarApp} subspaceId={toolbarSubspace} />;
   }
   if (addPopupFor) {
-    return <AddSubspacePopup appId={addPopupFor} />;
+    const from =
+      addUrl && addFromSubspace && addFromTab
+        ? { url: addUrl, name: addName ?? "", subspaceId: addFromSubspace, tabId: addFromTab }
+        : undefined;
+    return <AddSubspacePopup appId={addPopupFor} from={from} />;
   }
   if (quitConfirmFor) {
     return <QuitConfirmPopup appId={quitConfirmFor} />;

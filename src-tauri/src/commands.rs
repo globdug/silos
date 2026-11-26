@@ -1636,13 +1636,35 @@ fn remember_subspace_start_url(app_handle: &AppHandle, app_id: &str, subspace_id
 /// sidebar webview would be clipped by that webview's own (narrow) bounds,
 /// so this uses a real separate OS window positioned near the sidebar
 /// instead, which isn't constrained by any webview's surface size.
+///
+/// `from_*` prefill it from an open tab ("new subspace from this tab"): the
+/// tab's URL and title, and the subspace it was open in, whose session the
+/// new one starts out sharing. A popup that's already open is only focused
+/// for the plain sidebar button, but replaced when it has to show a tab.
 #[tauri::command]
-pub async fn open_add_subspace_popup(app_handle: AppHandle, widths: State<'_, SidebarWidths>, app_id: String) -> Result<(), String> {
+pub async fn open_add_subspace_popup(
+    app_handle: AppHandle,
+    widths: State<'_, SidebarWidths>,
+    app_id: String,
+    from_url: Option<String>,
+    from_name: Option<String>,
+    from_subspace_id: Option<String>,
+    from_tab_id: Option<String>,
+) -> Result<(), String> {
     let label = add_popup_label(&app_id);
 
     if let Some(window) = app_handle.get_window(&label) {
-        window.set_focus().map_err(|e| e.to_string())?;
-        return Ok(());
+        if from_url.is_none() {
+            window.set_focus().map_err(|e| e.to_string())?;
+            return Ok(());
+        }
+        let _ = window.destroy();
+        for _ in 0..20 {
+            if app_handle.get_window(&label).is_none() {
+                break;
+            }
+            let _ = tauri::async_runtime::spawn_blocking(|| std::thread::sleep(std::time::Duration::from_millis(50))).await;
+        }
     }
 
     let app_window = app_handle
@@ -1670,7 +1692,19 @@ pub async fn open_add_subspace_popup(app_handle: AppHandle, widths: State<'_, Si
     let popup_x = origin.x + sidebar_width + 8.0;
     let popup_y = (origin.y + window_size.height - popup_height - 62.0).max(origin.y + 8.0);
 
-    let url = WebviewUrl::App(format!("index.html?addPopupFor={app_id}").into());
+    let mut query = url::form_urlencoded::Serializer::new(String::new());
+    query.append_pair("addPopupFor", &app_id);
+    for (key, value) in [
+        ("addUrl", &from_url),
+        ("addName", &from_name),
+        ("addFromSubspace", &from_subspace_id),
+        ("addFromTab", &from_tab_id),
+    ] {
+        if let Some(value) = value.as_deref().filter(|v| !v.is_empty()) {
+            query.append_pair(key, value);
+        }
+    }
+    let url = WebviewUrl::App(format!("index.html?{}", query.finish()).into());
 
     tauri::WebviewWindowBuilder::new(&app_handle, &label, url)
         .title("Nuovo sottospazio")
@@ -2654,12 +2688,52 @@ fn title_case(query: &str) -> String {
 #[tauri::command]
 pub async fn fetch_favicon_for_url(app_handle: AppHandle, url: String) -> Result<String, String> {
     let parsed = url::Url::parse(url.trim()).map_err(|e| e.to_string())?;
-    let response = http_client().get(parsed.clone()).send().await.map_err(|_| "sito non raggiungibile".to_string())?;
+    page_favicon_over_http(&app_handle, parsed, false).await
+}
+
+/// Fetches `url` without any session and takes the favicon off the page it
+/// lands on. With `same_host_only`, a redirect to another host (typically a
+/// login wall, e.g. accounts.google.com for any signed-in Google service)
+/// counts as "no icon": that page's favicon belongs to the login site, not
+/// the one asked about, and a generic logo is worse than none.
+async fn page_favicon_over_http(app_handle: &AppHandle, url: url::Url, same_host_only: bool) -> Result<String, String> {
+    let response = http_client().get(url.clone()).send().await.map_err(|_| "sito non raggiungibile".to_string())?;
     let final_url = response.url().clone();
+    if same_host_only && final_url.host_str() != url.host_str() {
+        return Err("nessuna icona trovata sul sito".to_string());
+    }
     let html = response.text().await.unwrap_or_default();
-    find_page_icon(&app_handle, &final_url, &html)
+    find_page_icon(app_handle, &final_url, &html)
         .await
         .ok_or_else(|| "nessuna icona trovata sul sito".to_string())
+}
+
+/// Icon of a page open in a tab, cached into data/icons/ like the other
+/// icon sources. Asks the live webview for the favicon it resolved (so pages
+/// behind a login, like Google Docs, get their real icon rather than the
+/// sign-in page's), falling back to fetching the page's favicon over HTTP.
+#[tauri::command]
+pub async fn get_tab_icon(app_handle: AppHandle, app_id: String, subspace_id: String, tab_id: String) -> Result<String, String> {
+    let webview = app_handle
+        .get_webview(&tab_label(&app_id, &subspace_id, &tab_id))
+        .ok_or("tab not open")?;
+
+    #[cfg(windows)]
+    {
+        let probe = webview.clone();
+        let uri = tauri::async_runtime::spawn_blocking(move || crate::platform::webview::favicon_uri(&probe))
+            .await
+            .ok()
+            .flatten();
+        if let Some(icon_url) = uri.and_then(|u| url::Url::parse(&u).ok()).filter(|u| u.scheme().starts_with("http")) {
+            if let Some(path) = fetch_and_cache_icon(&app_handle, icon_url).await {
+                return Ok(path);
+            }
+        }
+    }
+
+    let page_url = webview.url().map_err(|e| e.to_string())?;
+    page_favicon_over_http(&app_handle, page_url, true).await
 }
 
 async fn find_page_icon(app_handle: &AppHandle, final_url: &url::Url, html: &str) -> Option<String> {

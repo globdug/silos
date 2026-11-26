@@ -48,6 +48,9 @@ interface Props {
   /// Extra form content rendered above the Cancel/Create buttons (e.g. a
   /// session-group picker for subspaces).
   extraFields?: React.ReactNode;
+  /// What the "Favicon del sito" button runs for the current URL. Defaults to
+  /// fetching the site over plain HTTP, which can't see pages behind a login.
+  fetchFavicon?: (url: string) => Promise<string>;
 }
 
 /// Search-bar-first way to add a webapp or subspace: type a name/domain to
@@ -66,6 +69,7 @@ export function SiteSearch({
   defaultBackground = DEFAULT_ICON_BG,
   showShape = false,
   extraFields,
+  fetchFavicon = api.fetchFaviconForUrl,
 }: Props) {
   const { t } = useTranslation();
   const effectiveSearchPlaceholder = searchPlaceholder ?? t("siteSearch.defaultSearchPlaceholder");
@@ -186,7 +190,7 @@ export function SiteSearch({
             paddingPercent={resolved.paddingPercent}
             fallbackChar={resolved.name.charAt(0).toUpperCase() || "?"}
             searchSeed={resolved.name}
-            onFetchFavicon={() => api.fetchFaviconForUrl(resolved.url)}
+            onFetchFavicon={() => fetchFavicon(resolved.url)}
             onIconResolved={(iconPath) => setResolved({ ...resolved, iconPath })}
           />
 

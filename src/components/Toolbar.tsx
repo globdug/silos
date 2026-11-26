@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import type { TabInfo } from "../types";
 import { api } from "../api";
-import { DownloadIcon } from "./icons";
+import { DownloadIcon, SubspaceAddIcon } from "./icons";
 
 interface Props {
   appId: string;
@@ -87,6 +87,19 @@ export function Toolbar({ appId, subspaceId }: Props) {
   }
 
   const activeTab = tabs.find((t) => t.id === activeId) ?? null;
+  const canMakeSubspace = !!activeTab && /^https?:\/\//i.test(activeTab.url);
+
+  // Opens the add-subspace popup prefilled from the active tab: its page
+  // becomes the new subspace's start page, sharing this subspace's session.
+  function handleSubspaceFromTab() {
+    if (!activeTab || !canMakeSubspace) return;
+    api.openAddSubspacePopup(appId, {
+      url: activeTab.url,
+      name: activeTab.title.trim() || new URL(activeTab.url).hostname,
+      subspaceId,
+      tabId: activeTab.id,
+    });
+  }
 
   useEffect(() => {
     if (activeTab && !editingUrl) {
@@ -163,6 +176,14 @@ export function Toolbar({ appId, subspaceId }: Props) {
           title={t("toolbar.homeTitle")}
         >
           ⌂
+        </button>
+        <button
+          className="ghost toolbar-nav-btn"
+          disabled={!canMakeSubspace}
+          onClick={handleSubspaceFromTab}
+          title={t("toolbar.newSubspaceFromTabTitle")}
+        >
+          <SubspaceAddIcon size={15} />
         </button>
         <button
           key={flashKey}

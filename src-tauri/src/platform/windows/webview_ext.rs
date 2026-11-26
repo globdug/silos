@@ -144,6 +144,36 @@ pub fn remove_wry_ipc_bridge(webview: &tauri::webview::Webview) {
     });
 }
 
+/// URI of the favicon WebView2 currently has for the page loaded in this
+/// webview, if it has found one yet. Reads what the browser itself resolved
+/// (`<link rel=icon>`, manifest, `/favicon.ico`, redirects and login walls
+/// included), so it stays right for pages a plain HTTP fetch can't reach
+/// without the session cookies.
+///
+/// Blocks until the webview thread answers, so it must be called from a
+/// worker thread (e.g. `spawn_blocking`), never from the main thread that
+/// `with_webview` dispatches to.
+pub fn favicon_uri(webview: &tauri::webview::Webview) -> Option<String> {
+    use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2_15;
+    use windows::core::Interface;
+
+    let (tx, rx) = std::sync::mpsc::channel();
+    let _ = webview.with_webview(move |pw| {
+        let uri = unsafe {
+            pw.controller()
+                .CoreWebView2()
+                .ok()
+                .and_then(|core| core.cast::<ICoreWebView2_15>().ok())
+                .map(|core15| read_pwstr(|out| core15.FaviconUri(out)))
+        };
+        let _ = tx.send(uri);
+    });
+    rx.recv_timeout(std::time::Duration::from_secs(2))
+        .ok()
+        .flatten()
+        .filter(|s| !s.is_empty())
+}
+
 /// Silently accepts TLS certificate errors (expired/self-signed/hostname
 /// mismatch) instead of showing WebView2's interstitial warning page. Scoped
 /// to this one webview's `ICoreWebView2` — since every subspace already gets
