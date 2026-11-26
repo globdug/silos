@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-11-26
+
+### Fixed
+- Google Docs, Slides and Sheets (e.g. opened from the Classroom menu) stayed blank and showed "Problema di caricamento / clear the cache" inside Silos, while working in a normal browser. Cause: the WebView2 layer injects a non-removable global `window.ipc` into every page, and Google's page script declares its own top-level `ipc`, which then fails with `SyntaxError: Identifier 'ipc' has already been declared`. Tabs no longer get that bridge (they don't use it). Windows only for now; tabs now start on a blank page and navigate to the URL right after creation.
+
+### Changed
+- Dev builds (`npm run tauri:dev`) open a Chromium remote-debugging port on each webview so tabs can be inspected over CDP. Not enabled in release builds.
+
 ## [0.3.4] - 2026-11-26
 
 ### Changed
