@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-26
+
+### Added
+- Rebuild the Start menu shortcut of an app on demand: a button on each dashboard card (next to settings and delete) and a "Rebuild shortcut" button in the app's settings (Info → Start menu shortcut). It rewrites the shortcut from the app's current name and icon, pointing at the `silos.exe` that is running, which fixes a shortcut that went missing, shows the wrong icon, or still points at an old location after the Silos folder was moved. Previously a shortcut was only refreshed when its app was launched. On Windows it reports failure if the shortcut couldn't be written.
+
 ## [0.4.0] - 2026-11-26
 
 ### Added
